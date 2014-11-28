@@ -199,10 +199,16 @@ class NNet:
         for l_idx in range(self.num_layers()-1):
             for vertex in self.get_layer(l_idx).get_vertexes():
                 vertex.grad_check=0*vertex.weight_matrix
-    
+    def get_estimate(self):
+        return self.get_output_layer().get_vertex(0).data
     def compute_cost(self):
+        print self.target_variable.shape
+        print self.get_estimate().shape
+        print '-'
+        print self.target_variable.shape
+        print self.get_estimate().shape
         cost_pre=-(np.dot((self.target_variable.T)*\
-            np.log(self.estimate)))-np.dot((1-self.target_variable.T),np.log(1-self.estimate))
+            np.log(self.get_estimate())))-np.dot((1-self.target_variable.T),np.log(1-self.get_estimate()))
         self.cost=(1./self.batch_size)*np.sum(np.diag(cost_pre))
         #LAMBDA L8R
         #if self.lambd>0:
