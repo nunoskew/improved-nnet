@@ -11,10 +11,10 @@ from nn import *
 data=pd.read_table("ok.txt",",",header=0)
 nn=NNet()
 nn.set_dataset(data)
-nn.set_alpha(1)
+nn.set_alpha(0.01)
 nn.set_n_iter(500)
 nn.set_lambd(0)
-nn.set_batch_size(112)
+nn.set_batch_size(30)
 
 nn.add_n_layers(5)
 
@@ -195,21 +195,22 @@ class NNet:
             for vertex in self.get_layer(l_idx).get_vertexes():
                 vertex.grad=0*vertex.weight_matrix
                 
-    def initialize_gradent_checking(self):
+    def initialize_gradient_checking(self):
         for l_idx in range(self.num_layers()-1):
             for vertex in self.get_layer(l_idx).get_vertexes():
                 vertex.grad_check=0*vertex.weight_matrix
     def get_estimate(self):
         return self.get_output_layer().get_vertex(0).data
     def compute_cost(self):
-        print self.target_variable.shape
-        print self.get_estimate().shape
-        print '-'
-        print self.target_variable.shape
-        print self.get_estimate().shape
-        cost_pre=-(np.dot((self.target_variable.T)*\
+        #print self.target_variable.shape
+        #print self.get_estimate().shape
+        #print '-'
+        #print self.target_variable.shape
+        #print self.get_estimate().shape
+        cost_pre=-(np.dot((self.target_variable.T),\
             np.log(self.get_estimate())))-np.dot((1-self.target_variable.T),np.log(1-self.get_estimate()))
         self.cost=(1./self.batch_size)*np.sum(np.diag(cost_pre))
+        print self.cost
         #LAMBDA L8R
         #if self.lambd>0:
             #(self.lambd/(2*self.batch_size))
@@ -230,15 +231,17 @@ class NNet:
         self.set_target_variable(self.dataset[idxs,36:60])
         
     def gradient_check(self,epsilon):
-        self.initialize_grad_checking()
+        self.initialize_gradient_checking()
         for layer_idx in range(self.num_layers()-1):
             for vertex in self.get_layer(layer_idx).get_vertexes():
                 for i in range(vertex.weight_matrix.shape[0]):
                     for j in range(vertex.weight_matrix.shape[1]):
                         vertex.weight_matrix[i][j]+=epsilon
-                        cost_plus=self.compute_cost()
+                        self.compute_cost()
+                        cost_plus=self.get_cost()
                         vertex.weight_matrix[i][j]-=(2*epsilon)
-                        cost_minus=self.compute_cost()
+                        self.compute_cost()
+                        cost_minus=self.get_cost()
                         vertex.weight_matrix[i][j]+=+epsilon
                         vertex.grad_check[i][j]=(cost_plus-cost_minus)/(2*epsilon)
         
@@ -255,8 +258,8 @@ class NNet:
                         in_vertex.grad+=((1./self.batch_size)*np.dot(in_vertex.data.T,vertex.delta))
                 else:
                     for in_vertex in vertex.get_pointed_from():
-                        print vertex.delta.shape
-                        print in_vertex.weight_matrix.T.shape
+                        #print vertex.delta.shape
+                        #print in_vertex.weight_matrix.T.shape
                         in_vertex.delta=np.dot(vertex.delta[:,1:],in_vertex.weight_matrix.T)*\
                                     sigmoid_grad(in_vertex.data)
                         in_vertex.grad+=((1./self.batch_size)*np.dot(in_vertex.data.T,vertex.delta[:,1:]))
@@ -282,8 +285,8 @@ class NNet:
             for layer_idx in range(self.num_layers()-1):
                 for vertex in self.get_layer(layer_idx).get_vertexes():
                     vertex.weight_matrix-=(self.alpha*vertex.grad)
-            #self.compute_cost()
-            #print self.cost
+            self.compute_cost()
+            
         
     
         
