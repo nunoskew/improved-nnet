@@ -113,18 +113,18 @@ class NNet:
         self.n_iter=0
         self.lambd=0
         self.dataset=pd.DataFrame()
-    def set_dataset(self,d):
-        data=one_hot_encoding(d, ['relation','person1','person2'])
-        data=data.as_matrix()
-        self.dataset=data
+ #   def set_dataset(self,d):
+ #       data=one_hot_encoding(d, ['relation','person1','person2'])
+ #       data=data.as_matrix()
+ #       self.dataset=data
     def set_n_iter(self,n):
         self.n_iter=n
     def set_alpha(self,a):
         self.alpha=a
     def set_lambd(self,l):
         self.lambd=l
-    def set_target_variable(self,y):
-        self.target_variable=y
+#    def set_target_variable(self,y):
+#        self.target_variable=y
         
     def add_n_layers(self,num_layers):
         if num_layers>2:
@@ -195,10 +195,10 @@ class NNet:
             for vertex in self.get_layer(l_idx).get_vertexes():
                 vertex.grad=0*vertex.weight_matrix
                 
-    def initialize_gradient_checking(self):
-        for l_idx in range(self.num_layers()-1):
-            for vertex in self.get_layer(l_idx).get_vertexes():
-                vertex.grad_check=0*vertex.weight_matrix
+#    def initialize_gradient_checking(self):
+#        for l_idx in range(self.num_layers()-1):
+#            for vertex in self.get_layer(l_idx).get_vertexes():
+#                vertex.grad_check=0*vertex.weight_matrix
     def get_estimate(self):
         return self.get_output_layer().get_vertex(0).data
     def compute_cost(self):
@@ -218,32 +218,32 @@ class NNet:
     def get_cost(self):
         return self.cost
         
-    def set_data(self):
-        #m=112
-        #idxs=random.sample(xrange(m),m-self.batch_size)
-        idxs=np.random.randint(self.dataset.shape[0],size=self.batch_size)
-        #dataset=pd.read_table("ok.txt",",",header=0,skiprows=idxs)
-        #relation=pd.get_dummies(dataset['relation']).as_matrix()
-        #person1=pd.get_dummies(dataset['person1']).as_matrix()
-        #person2=pd.get_dummies(dataset['person2']).as_matrix()
-        self.get_input_layer().get_vertex(0).set_data(self.dataset[idxs,0:24])
-        self.get_input_layer().get_vertex(1).set_data(self.dataset[idxs,24:36])
-        self.set_target_variable(self.dataset[idxs,36:60])
+#    def set_data(self):
+#        #m=112
+#        #idxs=random.sample(xrange(m),m-self.batch_size)
+#        idxs=np.random.randint(self.dataset.shape[0],size=self.batch_size)
+#        #dataset=pd.read_table("ok.txt",",",header=0,skiprows=idxs)
+#        #relation=pd.get_dummies(dataset['relation']).as_matrix()
+#        #person1=pd.get_dummies(dataset['person1']).as_matrix()
+#        #person2=pd.get_dummies(dataset['person2']).as_matrix()
+#        self.get_input_layer().get_vertex(0).set_data(self.dataset[idxs,0:24])
+#        self.get_input_layer().get_vertex(1).set_data(self.dataset[idxs,24:36])
+#        self.set_target_variable(self.dataset[idxs,36:60])
         
-    def gradient_check(self,epsilon):
-        self.initialize_gradient_checking()
-        for layer_idx in range(self.num_layers()-1):
-            for vertex in self.get_layer(layer_idx).get_vertexes():
-                for i in range(vertex.weight_matrix.shape[0]):
-                    for j in range(vertex.weight_matrix.shape[1]):
-                        vertex.weight_matrix[i][j]+=epsilon
-                        self.compute_cost()
-                        cost_plus=self.get_cost()
-                        vertex.weight_matrix[i][j]-=(2*epsilon)
-                        self.compute_cost()
-                        cost_minus=self.get_cost()
-                        vertex.weight_matrix[i][j]+=+epsilon
-                        vertex.grad_check[i][j]=(cost_plus-cost_minus)/(2*epsilon)
+#    def gradient_check(self,epsilon):
+#        self.initialize_gradient_checking()
+#        for layer_idx in range(self.num_layers()-1):
+#            for vertex in self.get_layer(layer_idx).get_vertexes():
+#                for i in range(vertex.weight_matrix.shape[0]):
+#                    for j in range(vertex.weight_matrix.shape[1]):
+#                        vertex.weight_matrix[i][j]+=epsilon
+#                        self.compute_cost()
+#                        cost_plus=self.get_cost()
+#                        vertex.weight_matrix[i][j]-=(2*epsilon)
+#                        self.compute_cost()
+#                        cost_minus=self.get_cost()
+#                        vertex.weight_matrix[i][j]+=+epsilon
+#                        vertex.grad_check[i][j]=(cost_plus-cost_minus)/(2*epsilon)
         
     def back_prop(self):
         self.initialize_grad()
