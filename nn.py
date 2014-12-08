@@ -54,6 +54,8 @@ import pandas as pd
 import numpy as np
 import random 
 
+def logit(mtx):
+    return -np.log((1/mtx)-1)
 def sigmoid(mtx):
     return 1./(1.+np.exp(-(mtx)))
     
@@ -67,25 +69,63 @@ def sigmoid_grad(z):
     >>> sigmoid_grad(0)
     0.25
     """
-    return sigmoid(z)*(1-sigmoid(z))
+    s=sigmoid(z)
+    return s*(1-s)
+def extend_target_variable(y,classes):
+    """(vector) -> matrix/vector
+    
+    If the number of classes is greater than 2 it returns a (m*K) matrix 
+    in which each column  j is a binary vector denoting if the line i is 
+    labeled j of classes is bigger than two if not returns the original 
+    vector
+    
+    >>> y=np.array([[1],[2],[3]])
+    >>> extend_target_variable(y)
+    array([[ 1.,  0.,  0.],
+           [ 0.,  1.,  0.],
+           [ 0.,  0.,  1.]])
+
+    """
+    #number of classes
+    n_class=len(classes)
+    if n_class>2:
+        #ordered array (yes, ordered) with the different classes of y 
+        #classes=np.unique(y)
+        #number of lines
+        m=np.shape(y)[0]
+        #initialize return matrix 
+        y_new=np.zeros((m,n_class))
+        for j in range(n_class):
+            #column of y_new is a logical vector turned into an int vector
+            y_new[:,j:j+1]=(y==classes[j]).astype(int)
+        #change this
+        #a=y_new[:,0:1]
+        #y_new[:,0:n_class-1]=y_new[:,1:n_class]
+        #y_new[:,n_class-1:n_class]=a;
+    else:
+        y_new=y
+    return y_new
 
 class Vertex:
     def __init__(self):
         self.num_nodes=0
         self.pointed_from=[]
         self.data=np.shape((0,0))
+        #self.Z=np.shape((0,0))
         self.weight_matrix=np.shape((0,0))
         self.grad=np.shape((0,0))
         self.delta=np.shape((0,0))
         self.grad_check=np.shape((0,0))
     def set_data(self,d):
-        n=d.shape[1]+1
-        self.data=np.zeros((d.shape[0],n))
-        self.data[:,1:]=d
-        self.set_num_nodes(n)
+        n=d.shape     
+        #self.Z=np.ones((n[0],n[1]))
+        
+        self.data=np.ones((n[0],n[1]))
+        #self.A[:,1:]=d
+        #self.set_num_nodes(n[1]+1)
         
     def get_data(self):
-        return self.data
+        return self.data 
 
     def get_weight_matrix(self):
         return self.weight_matrix
@@ -148,15 +188,22 @@ class NNet:
         
         
     def forward_prop(self):
-        for l_idx in range(1,(self.num_layers()-1)):
+        for l_idx in range(1,(self.num_layers())):
             for vertex in self.get_layer(l_idx).get_vertexes():
                 for in_vertex in vertex.get_pointed_from():
-                    vertex.data[:,1:]+=np.dot(in_vertex.data,in_vertex.weight_matrix)
-                vertex.data[:,1:]=sigmoid(vertex.data[:,1:])
-        for vertex in self.get_output_layer().get_vertexes():
-                for in_vertex in vertex.get_pointed_from():
-                    vertex.data+=np.dot(in_vertex.data,in_vertex.weight_matrix)
+                    #print np.concatenate((np.ones((self.get_batch_size(),1)),in_vertex.data),axis=1).shape
+                    #print in_vertex.weight_matrix.shape
+                    vertex.data+=\
+                                np.dot(np.concatenate((np.ones((self.get_batch_size(),1)),in_vertex.data),axis=1)\
+                                ,in_vertex.weight_matrix)
                 vertex.data=sigmoid(vertex.data)
+#        for vertex in self.get_output_layer().get_vertexes():
+#                for in_vertex in vertex.get_pointed_from():
+#                    #print vertex.Z.shape
+#                    #print in_vertex.A.shape
+#                    #print in_vertex.weight_matrix.shape
+#                    vertex.data+=np.dot(np.dot(np.concatenate((np.ones((m,1)),in_vertex.data),in_vertex.weight_matrix)
+#                vertex.data=sigmoid(vertex.data)
                     
                 
     def get_batch_size(self):
@@ -166,24 +213,25 @@ class NNet:
         self.batch_size=b
         
     def initialize_data(self):
-        for l_idx in range(self.num_layers()-1):
+        for l_idx in range(self.num_layers()):
             for vertex in self.get_layer(l_idx).get_vertexes():
                 vertex.set_data(np.zeros((self.batch_size,vertex.get_num_nodes())))
         for vertex in self.get_output_layer().get_vertexes():
-            vertex.set_data(np.zeros((self.batch_size,(vertex.get_num_nodes()-1))))
-        
+            vertex.set_data(np.zeros((self.batch_size,(vertex.get_num_nodes()))))
+            #vertex.Z=(np.zeros((self.batch_size,(vertex.get_num_nodes()))))
+            
     def initialize_weight_matrixes(self,epsilon_init):
-        for l_idx in range(1,(self.num_layers()-1)):
+        for l_idx in range(1,(self.num_layers())):
             for vertex in self.get_layer(l_idx).get_vertexes():
                 for in_vertex in vertex.get_pointed_from():
                     in_vertex.set_weight_matrix(\
-                            np.random.rand(in_vertex.get_num_nodes(),vertex.get_num_nodes()-1)\
+                            np.random.rand(in_vertex.get_num_nodes()+1,vertex.get_num_nodes())\
                             *2*epsilon_init-epsilon_init)
-        for vertex in self.get_output_layer().get_vertexes():
-            for in_vertex in vertex.get_pointed_from():
-                in_vertex.set_weight_matrix(\
-                            np.random.rand(in_vertex.get_num_nodes(),vertex.get_num_nodes())\
-                            *2*epsilon_init-epsilon_init)
+#        for vertex in self.get_output_layer().get_vertexes():
+#            for in_vertex in vertex.get_pointed_from():
+#                in_vertex.set_weight_matrix(\
+#                            np.random.rand(in_vertex.get_num_nodes(),vertex.get_num_nodes())\
+#                            *2*epsilon_init-epsilon_init)
                             
     def initialize_deltas(self):
         for l_idx in range(self.num_layers()):
@@ -200,16 +248,23 @@ class NNet:
 #            for vertex in self.get_layer(l_idx).get_vertexes():
 #                vertex.grad_check=0*vertex.weight_matrix
     def get_estimate(self):
-        return self.get_output_layer().get_vertex(0).data
+        return self.get_output_layer().get_vertex(0).get_data()
     def compute_cost(self):
         #print self.target_variable.shape
         #print self.get_estimate().shape
         #print '-'
         #print self.target_variable.shape
         #print self.get_estimate().shape
-        cost_pre=-(np.dot((self.target_variable.T),\
-            np.log(self.get_estimate())))-np.dot((1-self.target_variable.T),np.log(1-self.get_estimate()))
-        self.cost=(1./self.batch_size)*np.sum(np.diag(cost_pre))
+        cost_pre=(self.target_variable*np.log(self.get_estimate()))+\
+        ((1-self.target_variable)*np.log(1-self.get_estimate()))
+        self.cost=-(1./self.get_batch_size())*cost_pre.sum()
+        reg=0
+        for l_idx in range(self.num_layers()-1):
+            for vertex in self.get_layer(l_idx).get_vertexes():
+                reg+=(vertex.weight_matrix[1:,:]**2).sum()
+       
+        reg*=(float(self.lambd)/(2*self.get_batch_size()))
+        self.cost+=reg
         print self.cost
         #LAMBDA L8R
         #if self.lambd>0:
@@ -247,22 +302,57 @@ class NNet:
         
     def back_prop(self):
         self.initialize_grad()
+        
+            
+        #vertex.delta=vertex.data-self.target_variable
         for vertex in self.get_output_layer().get_vertexes():
             vertex.delta=vertex.data-self.target_variable
-        for layer_idx in range(1,self.num_layers()-2):
-            for vertex in self.get_layer(-layer_idx).get_vertexes():
-                if layer_idx==1:
+
+        for layer_idx in range(1,self.num_layers()):
+            if layer_idx==1:
+                for vertex in self.get_layer(-layer_idx).get_vertexes():
                     for in_vertex in vertex.get_pointed_from():
-                        in_vertex.delta=np.dot(vertex.delta,in_vertex.weight_matrix.T)*\
-                                    sigmoid_grad(in_vertex.data)
-                        in_vertex.grad+=((1./self.batch_size)*np.dot(in_vertex.data.T,vertex.delta))
-                else:
+                        print in_vertex.delta.shape
+                        print vertex.delta.shape
+                        print in_vertex.weight_matrix.T.shape
+                        
+                        in_vertex.delta=np.dot(vertex.delta,in_vertex.weight_matrix.T[:,1:])
+                        in_vertex.delta*=sigmoid_grad(logit(in_vertex.data))
+
+                        in_vertex.grad+=np.dot(np.concatenate((np.ones((self.get_batch_size(),1)),in_vertex.data),axis=1).T,vertex.delta)
+                    in_vertex.grad*=(1./self.get_batch_size()) 
+                    in_vertex.grad[1:,:]+=(float(self.lambd)/(2*self.get_batch_size()))*in_vertex.weight_matrix[1:,:]
+            elif layer_idx>1 and layer_idx<self.num_layers()-1:
+                for vertex in self.get_layer(-layer_idx).get_vertexes():
                     for in_vertex in vertex.get_pointed_from():
-                        #print vertex.delta.shape
-                        #print in_vertex.weight_matrix.T.shape
-                        in_vertex.delta=np.dot(vertex.delta[:,1:],in_vertex.weight_matrix.T)*\
-                                    sigmoid_grad(in_vertex.data)
-                        in_vertex.grad+=((1./self.batch_size)*np.dot(in_vertex.data.T,vertex.delta[:,1:]))
+
+#                        
+                        
+                        in_vertex.delta=np.dot(vertex.delta,in_vertex.weight_matrix.T[:,1:])
+                        in_vertex.delta*=sigmoid_grad(logit(in_vertex.data))
+                        in_vertex.grad+=np.dot(np.concatenate((np.ones((self.get_batch_size(),1)),in_vertex.data),axis=1).T,vertex.delta)
+                    in_vertex.grad*=(1./self.get_batch_size())
+                    in_vertex.grad[1:,:]+=(float(self.lambd)/(2*self.get_batch_size()))*in_vertex.weight_matrix[1:,:]
+            else:
+                for vertex in self.get_layer(-layer_idx).get_vertexes():
+                    for in_vertex in vertex.get_pointed_from():
+
+                        
+                        
+#                        in_vertex.delta=np.dot(vertex.delta,in_vertex.weight_matrix.T)
+#                        in_vertex.delta[:,1:]*=sigmoid_grad(in_vertex.data[:,1:])
+                        in_vertex.grad+=np.dot(np.concatenate((np.ones((self.get_batch_size(),1)),in_vertex.data),axis=1).T,vertex.delta)                          
+                    in_vertex.grad*=(1./self.get_batch_size())
+                    in_vertex.grad[1:,:]+=(float(self.lambd)/(2*self.get_batch_size()))*in_vertex.weight_matrix[1:,:]
+#        for layer_idx in range(2,self.num_layers()-2):
+#            for vertex in self.get_layer(-layer_idx).get_vertexes():
+#                for in_vertex in vertex.get_pointed_from():
+#                        #print vertex.delta.shape
+#                        #print in_vertex.weight_matrix.T.shape
+#                    in_vertex.delta=np.dot(vertex.delta,in_vertex.weight_matrix.T)
+#                    in_vertex.delta[:,:]*=sigmoid_grad(in_vertex.data[:,1:])
+#                                    
+#                    in_vertex.grad+=((1./self.batch_size)*np.dot(in_vertex.data.T,vertex.delta[:,1:]))
                 
         
 #        for layer_idx in range(self.num_layers()-1):
