@@ -11,20 +11,20 @@ import nn_test
 reload(nn_test)
 from nn_test import *
 from nn import *
-data = scipy.io.loadmat('ex3data1.mat')
+data = scipy.io.loadmat('ex4data1.mat')
 X=data['X']
 y=data['y']
-data = scipy.io.loadmat('ex3weights.mat')
+data = scipy.io.loadmat('ex4weights.mat')
 theta1=data['Theta1'].T
 theta2=data['Theta2'].T
 X=np.concatenate((X,y),axis=1)
 nn=NNet_test()
 nn.set_dataset(X)
 
-nn.set_alpha(0.01)
-nn.set_n_iter(5000)
+nn.set_alpha(1)
+nn.set_n_iter(500)
 nn.set_lambd(0)
-nn.set_batch_size(100)
+nn.set_batch_size(5)
 
 nn.add_n_layers(3)
 
@@ -40,7 +40,7 @@ nn.get_output_layer().get_vertex(0).set_num_nodes(10)
 nn.get_output_layer().get_vertex(0).add_in_edge(nn.get_layer(1).get_vertex(0))
 
 nn.initialize_data()
-nn.initialize_weight_matrixes(0.01)
+nn.initialize_weight_matrixes(0.12)
 nn.initialize_deltas()
 
 #nn.set_data()
@@ -52,8 +52,8 @@ nn.initialize_deltas()
 nn.set_data()
 nn.forward_prop()
 nn.back_prop()
-nn.gradient_check(0.01)
-#nn.grad_descent()
+nn.gradient_check(0.0001)
+nn.grad_descent()
 """
 
 from nn import *

@@ -14,7 +14,7 @@ nn.set_dataset(data)
 nn.set_alpha(0.01)
 nn.set_n_iter(500)
 nn.set_lambd(0)
-nn.set_batch_size(30)
+nn.set_batch_size(112)
 
 nn.add_n_layers(5)
 
@@ -45,7 +45,7 @@ nn.get_output_layer().get_vertex(0).set_num_nodes(24)
 nn.get_output_layer().get_vertex(0).add_in_edge(nn.get_layer(3).get_vertex(0))
 
 nn.initialize_data()
-nn.initialize_weight_matrixes(0.01)
+nn.initialize_weight_matrixes(0.1)
 nn.initialize_deltas()
 
 nn.grad_descent()
@@ -117,10 +117,10 @@ class Vertex:
         self.delta=np.shape((0,0))
         self.grad_check=np.shape((0,0))
     def set_data(self,d):
-        n=d.shape     
+        #n=d.shape     
         #self.Z=np.ones((n[0],n[1]))
         
-        self.data=np.ones((n[0],n[1]))
+        self.data=d
         #self.A[:,1:]=d
         #self.set_num_nodes(n[1]+1)
         
@@ -153,18 +153,18 @@ class NNet:
         self.n_iter=0
         self.lambd=0
         self.dataset=pd.DataFrame()
- #   def set_dataset(self,d):
- #       data=one_hot_encoding(d, ['relation','person1','person2'])
- #       data=data.as_matrix()
- #       self.dataset=data
+    def set_dataset(self,d):
+        data=one_hot_encoding(d, ['relation','person1','person2'])
+        data=data.as_matrix()
+        self.dataset=data
     def set_n_iter(self,n):
         self.n_iter=n
     def set_alpha(self,a):
         self.alpha=a
     def set_lambd(self,l):
         self.lambd=l
-#    def set_target_variable(self,y):
-#        self.target_variable=y
+    def set_target_variable(self,y):
+        self.target_variable=y
         
     def add_n_layers(self,num_layers):
         if num_layers>2:
@@ -273,17 +273,17 @@ class NNet:
     def get_cost(self):
         return self.cost
         
-#    def set_data(self):
-#        #m=112
-#        #idxs=random.sample(xrange(m),m-self.batch_size)
-#        idxs=np.random.randint(self.dataset.shape[0],size=self.batch_size)
-#        #dataset=pd.read_table("ok.txt",",",header=0,skiprows=idxs)
-#        #relation=pd.get_dummies(dataset['relation']).as_matrix()
-#        #person1=pd.get_dummies(dataset['person1']).as_matrix()
-#        #person2=pd.get_dummies(dataset['person2']).as_matrix()
-#        self.get_input_layer().get_vertex(0).set_data(self.dataset[idxs,0:24])
-#        self.get_input_layer().get_vertex(1).set_data(self.dataset[idxs,24:36])
-#        self.set_target_variable(self.dataset[idxs,36:60])
+    def set_data(self):
+        #m=112
+        #idxs=random.sample(xrange(m),m-self.batch_size)
+        idxs=np.random.randint(self.dataset.shape[0],size=self.batch_size)
+        #dataset=pd.read_table("ok.txt",",",header=0,skiprows=idxs)
+        #relation=pd.get_dummies(dataset['relation']).as_matrix()
+        #person1=pd.get_dummies(dataset['person1']).as_matrix()
+        #person2=pd.get_dummies(dataset['person2']).as_matrix()
+        self.get_input_layer().get_vertex(0).set_data(self.dataset[idxs,0:24])
+        self.get_input_layer().get_vertex(1).set_data(self.dataset[idxs,24:36])
+        self.set_target_variable(self.dataset[idxs,36:60])
         
 #    def gradient_check(self,epsilon):
 #        self.initialize_gradient_checking()
@@ -312,9 +312,7 @@ class NNet:
             if layer_idx==1:
                 for vertex in self.get_layer(-layer_idx).get_vertexes():
                     for in_vertex in vertex.get_pointed_from():
-                        print in_vertex.delta.shape
-                        print vertex.delta.shape
-                        print in_vertex.weight_matrix.T.shape
+
                         
                         in_vertex.delta=np.dot(vertex.delta,in_vertex.weight_matrix.T[:,1:])
                         in_vertex.delta*=sigmoid_grad(logit(in_vertex.data))
@@ -325,7 +323,7 @@ class NNet:
             elif layer_idx>1 and layer_idx<self.num_layers()-1:
                 for vertex in self.get_layer(-layer_idx).get_vertexes():
                     for in_vertex in vertex.get_pointed_from():
-
+                        #print 'HELLO'
 #                        
                         
                         in_vertex.delta=np.dot(vertex.delta,in_vertex.weight_matrix.T[:,1:])
@@ -336,8 +334,9 @@ class NNet:
             else:
                 for vertex in self.get_layer(-layer_idx).get_vertexes():
                     for in_vertex in vertex.get_pointed_from():
-
-                        
+                        #print in_vertex.grad.shape
+                        #print np.concatenate((np.ones((self.get_batch_size(),1)),in_vertex.data),axis=1).T.shape
+                        #print vertex.delta.shape
                         
 #                        in_vertex.delta=np.dot(vertex.delta,in_vertex.weight_matrix.T)
 #                        in_vertex.delta[:,1:]*=sigmoid_grad(in_vertex.data[:,1:])
