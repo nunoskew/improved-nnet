@@ -60,19 +60,11 @@ from nn import *
 import scipy.io
 class NNet_test(NNet):
     def set_data(self):
-        #m=112
-        #idxs=random.sample(xrange(m),m-self.batch_size)
         idxs=np.random.randint(self.dataset.shape[0],size=self.batch_size)
-        #dataset=pd.read_table("ok.txt",",",header=0,skiprows=idxs)
-        #relation=pd.get_dummies(dataset['relation']).as_matrix()
-        #person1=pd.get_dummies(dataset['person1']).as_matrix()
-        #person2=pd.get_dummies(dataset['person2']).as_matrix()
         self.get_input_layer().get_vertex(0).set_data(self.dataset[idxs,0:400])
         self.set_target_variable(self.dataset[idxs,400:401],np.unique(self.dataset[:,400:401]))
         
     def set_dataset(self,d):
-        #data=one_hot_encoding(d, ['relation','person1','person2'])
-        #data=data.as_matrix()
         self.dataset=d
         
     def gradient_check(self,epsilon):
